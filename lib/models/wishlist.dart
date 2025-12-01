@@ -2,17 +2,23 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// ✅ ВИПРАВЛЕННЯ: Використовуємо 'static final' замість 'const' 
+// для коректного доступу до властивостей Icons.
+// Ми можемо використовувати 'static final' у фабричному конструкторі, 
+// не порушуючи правил tree-shaking, оскільки ми більше не створюємо IconData тут.
+abstract class _DefaultIcon {
+  static final int codePoint = Icons.card_giftcard.codePoint;
+  static final String fontFamily = Icons.card_giftcard.fontFamily!;
+}
+
 class Wishlist extends Equatable {
   final String id;
   final String ownerId;
   final String name;
 
-  // ❌ ВИДАЛЕНО: final IconData icon;
-  
-  // ✅ ДОДАНО: Поля для зберігання компонентів IconData
   final int iconCodePoint;
   final String iconFontFamily;
-  final String? iconFontPackage; // null для MaterialIcons
+  final String? iconFontPackage;
 
   final int itemCount;
   final Timestamp createdAt;
@@ -21,7 +27,6 @@ class Wishlist extends Equatable {
     required this.id,
     required this.ownerId,
     required this.name,
-    // ✅ Оновлений конструктор для прийому компонентів
     required this.iconCodePoint,
     required this.iconFontFamily,
     this.iconFontPackage, 
@@ -29,7 +34,7 @@ class Wishlist extends Equatable {
     required this.createdAt,
   });
 
-  // ✅ Геттер для зручного отримання IconData
+  // Геттер для зручного отримання IconData
   IconData get icon => IconData(
         iconCodePoint,
         fontFamily: iconFontFamily,
@@ -38,29 +43,27 @@ class Wishlist extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, 
-        ownerId, 
-        name, 
-        iconCodePoint, // ✅ Використовуємо прості типи
+        id,
+        ownerId,
+        name,
+        iconCodePoint,
         iconFontFamily,
         iconFontPackage,
-        itemCount, 
+        itemCount,
         createdAt
       ];
 
   factory Wishlist.fromSnapshot(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final defaultIcon = Icons.card_giftcard;
     
-    // 💡 ТЕПЕР МИ ЗБЕРІГАЄМО ТІЛЬКИ ЧИСЛА ТА РЯДКИ
     return Wishlist(
       id: doc.id,
       ownerId: data['ownerId'] ?? '',
       name: data['name'] ?? '',
       
-      // ✅ Більше не створюємо IconData, Flutter задоволений!
-      iconCodePoint: data['iconCodePoint'] ?? defaultIcon.codePoint,
-      iconFontFamily: data['iconFontFamily'] ?? defaultIcon.fontFamily!,
+      // ✅ ВИПРАВЛЕННЯ: Використовуємо static final значення
+      iconCodePoint: data['iconCodePoint'] ?? _DefaultIcon.codePoint,
+      iconFontFamily: data['iconFontFamily'] ?? _DefaultIcon.fontFamily,
       iconFontPackage: data['iconFontPackage'] as String?,
 
       createdAt: data['createdAt'] ?? Timestamp.now(),
@@ -73,11 +76,10 @@ class Wishlist extends Equatable {
       'ownerId': ownerId,
       'name': name,
       'createdAt': createdAt,
-      // ✅ Зберігаємо окремі поля
       'iconCodePoint': iconCodePoint,
       'iconFontFamily': iconFontFamily,
       'iconFontPackage': iconFontPackage,
-      'itemCount': itemCount, 
+      'itemCount': itemCount,
     };
   }
 }
