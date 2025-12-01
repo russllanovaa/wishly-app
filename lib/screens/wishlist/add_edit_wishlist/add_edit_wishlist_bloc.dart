@@ -42,10 +42,7 @@ class AddEditWishlistBloc extends Bloc<AddEditWishlistEvent, AddEditWishlistStat
  id: '', 
  ownerId: userId,
  name: event.name,
-        // ✅ ВИПРАВЛЕННЯ: Замінюємо event.icon на нові параметри
-        iconCodePoint: event.iconCodePoint,
-        iconFontFamily: event.iconFontFamily,
-        iconFontPackage: event.iconFontPackage, // Це поле може бути null
+       
  createdAt: Timestamp.now(),
  itemCount: 0, 
  );

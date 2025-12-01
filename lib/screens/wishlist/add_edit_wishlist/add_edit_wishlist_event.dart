@@ -1,33 +1,27 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart'; // ❌ Більше не потрібен
 import '../../../models/wishlist.dart';
 
 abstract class AddEditWishlistEvent extends Equatable {
- const AddEditWishlistEvent();
- @override List<Object?> get props => [];
+const AddEditWishlistEvent();
+@override List<Object?> get props => [];
 }
 
 class CreateWishlist extends AddEditWishlistEvent {
- final String name;
- // ❌ Замість final IconData icon; тепер використовуємо компоненти:
- final int iconCodePoint;
- final String iconFontFamily;
- final String? iconFontPackage; // Може бути null
+final String name;
 
- const CreateWishlist({
- required this.name,
- required this.iconCodePoint,
- required this.iconFontFamily,
- this.iconFontPackage, // Не обов'язково
- });
+// ❌ Поля іконки ВИДАЛЕНО
 
- @override 
- List<Object?> get props => [name, iconCodePoint, iconFontFamily, iconFontPackage];
+const CreateWishlist({
+required this.name,
+});
+
+@override 
+List<Object?> get props => [name];
 }
 
 class UpdateWishlist extends AddEditWishlistEvent {
- final Wishlist wishlist;
- const UpdateWishlist({required this.wishlist});
- @override List<Object?> get props => [wishlist];
+final Wishlist wishlist;
+const UpdateWishlist({required this.wishlist});
+@override List<Object?> get props => [wishlist];
 }
-
