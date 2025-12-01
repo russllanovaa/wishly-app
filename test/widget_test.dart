@@ -7,6 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 // Використовуємо пряму імітацію MethodChannel.
 
 import 'package:wish_list_app/main.dart';
+// Можливо, знадобиться імпорт SplashScreen, якщо він не імпортується автоматично
+// import 'screens/misc/splash_screen.dart';
 
 
 // --- ОСНОВНИЙ БЛОК ТЕСТІВ ---
@@ -16,11 +18,12 @@ void main() {
   // Цей код повинен бути виконаний негайно.
   TestWidgetsFlutterBinding.ensureInitialized();
   
-  // A. Заглушка для Firebase Core (основний канал)
+  // A. Заглушка для НОВОГО КАНАЛУ Pigeon (FirebaseCoreHostApi.initializeCore)
+  // Ми імітуємо канал, який використовується для викликів HostApi.
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-    const MethodChannel('plugins.flutter.io/firebase_core'),
+    const MethodChannel('dev.flutter.pigeon.firebase_core_platform_interface.FirebaseCoreHostApi'),
     (MethodCall methodCall) async {
-      if (methodCall.method == 'Firebase#initializeCore') {
+      if (methodCall.method == 'initializeCore') {
         // Імітуємо успішну ініціалізацію 'DEFAULT' додатка
         return [
           {
@@ -35,7 +38,7 @@ void main() {
           },
         ];
       }
-      if (methodCall.method == 'Firebase#initializeApp') {
+      if (methodCall.method == 'initializeApp') {
         return {
           'name': methodCall.arguments['appName'],
           'options': methodCall.arguments['options'],
@@ -46,20 +49,18 @@ void main() {
     },
   );
 
-  // B. Заглушка для Firebase Analytics
+  // B. Заглушка для Firebase Analytics (старий MethodChannel, залишаємо для сумісності)
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
     const MethodChannel('plugins.flutter.io/firebase_analytics'),
     (MethodCall methodCall) async {
-      // Повертаємо успіх для будь-яких викликів Analytics (logEvent, setUserId, etc.)
       return null;
     },
   );
 
-  // C. Заглушка для Firebase Crashlytics (використовується у вашому main.dart: runZonedGuarded)
+  // C. Заглушка для Firebase Crashlytics (старий MethodChannel, залишаємо для сумісності)
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
     const MethodChannel('plugins.flutter.io/firebase_crashlytics'),
     (MethodCall methodCall) async {
-      // Повертаємо успіх для ініціалізації та реєстрації помилок
       return null;
     },
   );
@@ -67,7 +68,6 @@ void main() {
   // 2. АСИНХРОННА ІНІЦІАЛІЗАЦІЯ Firebase у тестах
   setUpAll(() async {
     // Якщо Firebase ще не ініціалізовано, виконуємо імітований виклик initializeApp.
-    // Цей виклик тепер перехоплюється Mock Handler'ом у пункті 1.A.
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: const FirebaseOptions(
@@ -81,18 +81,14 @@ void main() {
   });
 
 
-  testWidgets('Initial app screen loads without crash', (WidgetTester tester) async {
+  testWidgets('App launches and renders initial route without crash', (WidgetTester tester) async {
     // 3. Запуск віджета
     await tester.pumpWidget(const MyApp());
     
-    // Чекаємо, доки всі асинхронні операції (якщо такі є в SplashScreen/AuthGate) завершаться
+    // Чекаємо, доки всі асинхронні операції (ініціалізація Firebase, перехід на SplashScreen/AuthGate) завершаться
     await tester.pumpAndSettle(); 
 
-    // Перевірка (Smoke Test): додаток успішно побудовано.
+    // ПЕРЕВІРКА (Smoke Test): додаток успішно побудовано, і головний віджет існує.
     expect(find.byType(MyApp), findsOneWidget); 
-    
-    // Якщо ви хочете перевірити, чи відображається SplashScreen, розкоментуйте:
-    // import 'screens/misc/splash_screen.dart'; // потрібно додати цей імпорт, якщо він відсутній
-    // expect(find.byType(SplashScreen), findsOneWidget); 
   });
 }
