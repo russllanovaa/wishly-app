@@ -4,18 +4,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Wishlist extends Equatable {
   final String id;
-  final String ownerId; 
+  final String ownerId;
   final String name;
   final IconData icon;
-  final int itemCount; 
-  final Timestamp createdAt; 
+  final int itemCount;
+  final Timestamp createdAt;
 
   const Wishlist({
     required this.id,
     required this.ownerId,
     required this.name,
     required this.icon,
-    required this.itemCount, 
+    required this.itemCount,
     required this.createdAt,
   });
 
@@ -24,16 +24,20 @@ class Wishlist extends Equatable {
 
   factory Wishlist.fromSnapshot(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final defaultIcon = Icons.card_giftcard;
+    
+    // 💡 Виправлення: Додано iconFontPackage для повної коректності IconData.
     return Wishlist(
       id: doc.id,
       ownerId: data['ownerId'] ?? '',
       name: data['name'] ?? '',
       icon: IconData(
-        data['iconCodePoint'] ?? Icons.card_giftcard.codePoint,
-        fontFamily: data['iconFontFamily'] ?? 'MaterialIcons',
+        data['iconCodePoint'] ?? defaultIcon.codePoint,
+        fontFamily: data['iconFontFamily'] ?? defaultIcon.fontFamily,
+        fontPackage: data['iconFontPackage'] as String?, // 👈 Додано обробку
       ),
       createdAt: data['createdAt'] ?? Timestamp.now(),
-      itemCount: data['itemCount'] ?? 0, 
+      itemCount: data['itemCount'] ?? 0,
     );
   }
 
@@ -44,7 +48,8 @@ class Wishlist extends Equatable {
       'createdAt': createdAt,
       'iconCodePoint': icon.codePoint,
       'iconFontFamily': icon.fontFamily,
-      'itemCount': itemCount, 
+      'iconFontPackage': icon.fontPackage, // 👈 Додано для збереження
+      'itemCount': itemCount,
     };
   }
 }
