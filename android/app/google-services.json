@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "229417646135",
+    "project_id": "wishly-a3bc9",
+    "storage_bucket": "wishly-a3bc9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:229417646135:android:71917a06c54013ca78e7b2",
+        "android_client_info": {
+          "package_name": "com.example.wish_list_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfHSmAdt971s9_27Rmu1AeqZI4MvwFcoY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
