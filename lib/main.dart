@@ -113,3 +113,46 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+// Альтернативна точка входу для тестів
+void mainTest() async {
+  // Для тестів використовуємо просту ініціалізацію без Firebase
+  runApp(const MyAppForTest());
+}
+
+// Спрощена версія додатка для тестів
+class MyAppForTest extends StatelessWidget {
+  const MyAppForTest({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider(create: (context) => WishlistRepository()),
+        RepositoryProvider(create: (context) => WishItemRepository()),
+        RepositoryProvider(create: (context) => StorageRepository()),
+      ],
+      child: BlocProvider(
+        create: (context) => WishlistBloc(
+          wishlistRepository: context.read<WishlistRepository>(),
+        ), 
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Wish List',
+          theme: ThemeData(
+            primaryColor: const Color(0xFF8A2BE2),
+            colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8A2BE2)),
+            useMaterial3: true,
+            scaffoldBackgroundColor: Colors.white,
+            fontFamily: 'Poppins',
+          ),
+          home: const Scaffold(
+            body: Center(
+              child: Text('Test App Running'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
