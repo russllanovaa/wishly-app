@@ -1,80 +1,92 @@
-// Це стандартні імпорти
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// Імпорти для імітації Firebase
+// Використовуємо стандартні імпорти Firebase Core
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
-import 'package:mockito/mockito.dart'; // Можливо, знадобиться
+// НЕ використовуємо firebase_core_platform_interface, оскільки він створює 
+// занадто багато залежностей від внутрішніх абстрактних класів.
 
 import 'package:wish_list_app/main.dart';
 
 
-// --- ДОПОМІЖНІ ФУНКЦІЇ ДЛЯ ІМІТАЦІЇ ---
-
-// 1. Функція setupFirebaseCoreMocks (зазвичай знаходиться в firebase_core/testing.dart, 
-// але краще її реалізувати для чистоти залежностей)
-void setupFirebaseCoreMocks() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-}
-
-// 2. Клас-заглушка для імітації Firebase
-class MockFirebaseApp extends Mock implements FirebaseApp {}
-
+// --- ОСНОВНИЙ БЛОК ТЕСТІВ ---
 
 void main() {
-  // --- БЛОК ІНІЦІАЛІЗАЦІЇ ДЛЯ ТЕСТУВАННЯ ---
+  // 1. Встановлюємо Mock-обробник для платформних каналів Firebase Core.
+  // Це перехоплює виклики, такі як Firebase.initializeApp(), і повертає успіх.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  
+  // Встановлення Mock Handler для каналу 'plugins.flutter.io/firebase_core'
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+    const MethodChannel('plugins.flutter.io/firebase_core'),
+    (MethodCall methodCall) async {
+      // Імітуємо успішну ініціалізацію 'DEFAULT' додатка
+      if (methodCall.method == 'Firebase#initializeCore') {
+        return [
+          {
+            'name': 'test',
+            'options': {
+              'appId': '1:1234567890:ios:4e4d67c5269739a8',
+              'apiKey': 'fakeApiKey',
+              'projectId': 'test-project',
+              'messagingSenderId': '1234567890',
+            },
+            'pluginConstants': {},
+          },
+        ];
+      }
+      // Імітуємо успішну ініціалізацію вторинного додатку
+      if (methodCall.method == 'Firebase#initializeApp') {
+        return {
+          'name': methodCall.arguments['appName'],
+          'options': methodCall.arguments['options'],
+          'pluginConstants': {},
+        };
+      }
+      return null;
+    },
+  );
 
-  // Викликається один раз перед запуском усіх тестів
+  // 2. Імітуємо ініціалізацію Firebase Core перед запуском віджета
   setUpAll(() async {
-    // Встановлюємо, що ми використовуємо заглушку для тестів
-    setupFirebaseCoreMocks();
-    
-    // Перевіряємо, чи вже ініціалізовано, щоб уникнути помилок
+    // Якщо Firebase ще не ініціалізовано, імітуємо ініціалізацію
     if (Firebase.apps.isEmpty) {
-      // Імітуємо ініціалізацію 'DEFAULT' додатку
       await Firebase.initializeApp(
-        name: 'test',
         options: const FirebaseOptions(
           appId: '1:1234567890:ios:4e4d67c5269739a8',
           apiKey: 'fakeApiKey',
           projectId: 'test-project',
           messagingSenderId: '1234567890',
         ),
-      );
+      ); 
     }
+    
+    // Встановлюємо заглушку для Analytics, оскільки ваш main.dart використовує FirebaseAnalytics.instance
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/firebase_analytics'),
+      (MethodCall methodCall) async {
+        // Ми просто повертаємо успіх для всіх викликів Analytics під час тестів
+        return null;
+      },
+    );
   });
 
-  // ------------------------------------------
 
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('Initial app screen loads without crash', (WidgetTester tester) async {
+    // Тепер, коли платформні канали імітовані, виклик pumpWidget не повинен падати.
     await tester.pumpWidget(const MyApp());
     
-    // Ваш код тесту (він не тестує лічильник, а скоріше
-    // перевіряє початкову сторінку - SplashScreen або AuthGate)
+    // Після запуску MyApp, ми повинні дочекатися, поки Splash Screen завантажиться
+    // та виконає будь-яку асинхронну логіку (якщо така є) перед перевіркою.
+    await tester.pumpAndSettle(); 
 
-    // Примітка: Оскільки ваш додаток починається з '/splash' або '/auth_gate', 
-    // він не відображає стандартний лічильник. Цей тест, скоріше за все, 
-    // перевіряє, чи не падає початкова сторінка.
+    // Оскільки ми не маємо коду SplashScreen, ми можемо перевірити лише, 
+    // що додаток успішно побудовано (без фатальних помилок).
+    expect(find.byType(MyApp), findsOneWidget); 
     
-    // Якщо ваш тест був створений для Flutter-шаблону, але ваш MyApp
-    // тепер відображає AuthGate, ці assert-и можуть бути не актуальними.
-    
-    // Залишаємо їх як приклад, але вони можуть викликати помилку, 
-    // якщо текст "0" не відображається.
-    
-    // Якщо тест падає після виправлення Firebase, 
-    // перевірте, який текст/віджет має бути на початковій сторінці.
-    
-    // expect(find.text('0'), findsOneWidget); 
-    // expect(find.text('1'), findsNothing);
-
-    // // Tap the '+' icon and trigger a frame.
-    // await tester.tap(find.byIcon(Icons.add));
-    // await tester.pump();
-
-    // // Verify that our counter has incremented.
-    // expect(find.text('0'), findsNothing);
-    // expect(find.text('1'), findsOneWidget);
+    // ВИДАЛЕНІ ЗАСТАРІЛІ ASSERT-И ЛІЧИЛЬНИКА (якщо вони були)
+    // Якщо ви хочете перевірити AuthGate або LoginScreen, вам потрібно 
+    // додати відповідні імпорти та assert-и.
   });
 }
