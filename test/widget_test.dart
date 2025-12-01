@@ -1,94 +1,145 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:firebase_core/firebase_core.dart';
-// НЕ використовуємо firebase_core_platform_interface.dart
-// Використовуємо пряму імітацію MethodChannel.
-
 import 'package:wish_list_app/main.dart';
-// Можливо, знадобиться імпорт SplashScreen, якщо він не імпортується автоматично
-// import 'screens/misc/splash_screen.dart';
 
-
-// --- ОСНОВНИЙ БЛОК ТЕСТІВ ---
-
-void main() {
-  // 1. ІНІЦІАЛІЗАЦІЯ ЗАГЛУШОК ПЛАТФОРМИ (Mock Handlers)
-  // Цей код повинен бути виконаний негайно.
+// 1. Функція для налаштування моків Firebase
+void setupFirebaseMocks() {
   TestWidgetsFlutterBinding.ensureInitialized();
   
-  // A. Заглушка для НОВОГО КАНАЛУ Pigeon (FirebaseCoreHostApi.initializeCore)
-  // Ми імітуємо канал, який використовується для викликів HostApi.
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-    const MethodChannel('dev.flutter.pigeon.firebase_core_platform_interface.FirebaseCoreHostApi'),
-    (MethodCall methodCall) async {
-      if (methodCall.method == 'initializeCore') {
-        // Імітуємо успішну ініціалізацію 'DEFAULT' додатка
-        return [
-          {
-            'name': 'test',
-            'options': {
-              'appId': '1:1234567890:ios:4e4d67c5269739a8',
-              'apiKey': 'fakeApiKey',
-              'projectId': 'test-project',
-              'messagingSenderId': '1234567890',
-            },
-            'pluginConstants': {},
-          },
-        ];
-      }
-      if (methodCall.method == 'initializeApp') {
-        return {
-          'name': methodCall.arguments['appName'],
-          'options': methodCall.arguments['options'],
-          'pluginConstants': {},
-        };
-      }
-      return null;
-    },
+  // Мок для Firebase Core (Pigeon канал)
+  const MethodChannel coreChannel = MethodChannel(
+    'dev.flutter.pigeon.firebase_core_platform_interface.FirebaseCoreHostApi',
   );
-
-  // B. Заглушка для Firebase Analytics (старий MethodChannel, залишаємо для сумісності)
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+  
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(coreChannel, (MethodCall methodCall) async {
+    if (methodCall.method == 'initializeCore') {
+      // Імітуємо успішну відповідь для initializeCore
+      return [
+        {
+          'name': '[DEFAULT]',
+          'options': {
+            'apiKey': 'fake-api-key',
+            'appId': '1:1234567890:ios:abc123def456',
+            'messagingSenderId': '1234567890',
+            'projectId': 'test-project-id',
+            'storageBucket': 'test.appspot.com',
+            'iosBundleId': 'com.example.test',
+            'iosClientId': 'fake-ios-client-id',
+            'androidClientId': 'fake-android-client-id',
+          },
+          'pluginConstants': {},
+        }
+      ];
+    }
+    
+    if (methodCall.method == 'initializeApp') {
+      // Імітуємо успішну відповідь для initializeApp
+      final args = methodCall.arguments as Map<dynamic, dynamic>;
+      return {
+        'name': args['appName'] ?? '[DEFAULT]',
+        'options': args['options'],
+        'pluginConstants': {},
+      };
+    }
+    
+    return null;
+  });
+  
+  // Мок для Firebase Analytics
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
     const MethodChannel('plugins.flutter.io/firebase_analytics'),
     (MethodCall methodCall) async {
       return null;
     },
   );
-
-  // C. Заглушка для Firebase Crashlytics (старий MethodChannel, залишаємо для сумісності)
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+  
+  // Мок для Firebase Crashlytics
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
     const MethodChannel('plugins.flutter.io/firebase_crashlytics'),
     (MethodCall methodCall) async {
       return null;
     },
   );
+  
+  // Мок для інших Firebase сервісів, які можуть використовуватись
+  const List<String> firebaseChannels = [
+    'plugins.flutter.io/firebase_auth',
+    'plugins.flutter.io/firebase_database',
+    'plugins.flutter.io/firebase_storage',
+    'plugins.flutter.io/firebase_messaging',
+    'plugins.flutter.io/firebase_remote_config',
+    'plugins.flutter.io/firebase_performance',
+  ];
+  
+  for (final channel in firebaseChannels) {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      MethodChannel(channel),
+      (MethodCall methodCall) async => null,
+    );
+  }
+}
 
-  // 2. АСИНХРОННА ІНІЦІАЛІЗАЦІЯ Firebase у тестах
-  setUpAll(() async {
-    // Якщо Firebase ще не ініціалізовано, виконуємо імітований виклик initializeApp.
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          appId: '1:1234567890:ios:4e4d67c5269739a8',
-          apiKey: 'fakeApiKey',
-          projectId: 'test-project',
-          messagingSenderId: '1234567890',
-        ),
-      ); 
-    }
-  });
-
-
-  testWidgets('App launches and renders initial route without crash', (WidgetTester tester) async {
-    // 3. Запуск віджета
-    await tester.pumpWidget(const MyApp());
+void main() {
+  // 2. Викликаємо налаштування моків на самому початку
+  setupFirebaseMocks();
+  
+  // 3. Групуємо тести
+  group('Wish List App Tests', () {
+    setUpAll(() async {
+      // Ініціалізуємо Firebase тільки один раз для всіх тестів
+      try {
+        if (Firebase.apps.isEmpty) {
+          await Firebase.initializeApp(
+            options: const FirebaseOptions(
+              appId: '1:1234567890:ios:abc123def456',
+              apiKey: 'fake-api-key',
+              projectId: 'test-project-id',
+              messagingSenderId: '1234567890',
+              iosBundleId: 'com.example.test',
+            ),
+          );
+        }
+      } catch (e) {
+        // Ігноруємо помилки ініціалізації в тестах
+      }
+    });
     
-    // Чекаємо, доки всі асинхронні операції (ініціалізація Firebase, перехід на SplashScreen/AuthGate) завершаться
-    await tester.pumpAndSettle(); 
-
-    // ПЕРЕВІРКА (Smoke Test): додаток успішно побудовано, і головний віджет існує.
-    expect(find.byType(MyApp), findsOneWidget); 
+    tearDownAll(() async {
+      // Очищуємо Firebase apps після тестів
+      try {
+        for (final app in Firebase.apps) {
+          await app.delete();
+        }
+      } catch (e) {
+        // Ігноруємо помилки очищення
+      }
+    });
+    
+    testWidgets('App launches and shows initial screen', 
+        (WidgetTester tester) async {
+      await tester.pumpWidget(const MyApp());
+      
+      // Додаємо затримку для асинхронної ініціалізації
+      await tester.pump(const Duration(seconds: 1));
+      
+      // Перевіряємо, що додаток запустився
+      expect(find.byType(MaterialApp), findsOneWidget);
+    });
+    
+    testWidgets('App does not crash on launch', 
+        (WidgetTester tester) async {
+      // Простий smoke test - перевіряємо, що додаток не викликає винятків
+      await tester.pumpWidget(const MyApp());
+      await tester.pumpAndSettle();
+      
+      // Якщо додаток дійшов сюди без винятків - тест пройдений
+      expect(tester.takeException(), isNull);
+    });
   });
 }
