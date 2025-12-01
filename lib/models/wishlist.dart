@@ -34,7 +34,7 @@ class Wishlist extends Equatable {
       icon: IconData(
         data['iconCodePoint'] ?? defaultIcon.codePoint,
         fontFamily: data['iconFontFamily'] ?? defaultIcon.fontFamily,
-        fontPackage: data['iconFontPackage'] as String?, // 👈 Додано обробку
+        fontPackage: data['iconFontPackage'] as String?, 
       ),
       createdAt: data['createdAt'] ?? Timestamp.now(),
       itemCount: data['itemCount'] ?? 0,
