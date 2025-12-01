@@ -7,53 +7,65 @@ import 'add_edit_wishlist_state.dart';
 import '../../../models/wishlist.dart';
 
 class AddEditWishlistBloc extends Bloc<AddEditWishlistEvent, AddEditWishlistState> {
-  final WishlistRepository _wishlistRepository;
-  
-  AddEditWishlistBloc({required WishlistRepository wishlistRepository})
-      : _wishlistRepository = wishlistRepository,
-        super(AddEditWishlistInitial()) {
-    on<CreateWishlist>(_onCreateWishlist);
-    on<UpdateWishlist>(_onUpdateWishlist);
-  }
+ final WishlistRepository _wishlistRepository;
+ 
+ AddEditWishlistBloc({required WishlistRepository wishlistRepository})
+ : _wishlistRepository = wishlistRepository,
+ super(AddEditWishlistInitial()) {
+ on<CreateWishlist>(_onCreateWishlist);
+ on<UpdateWishlist>(_onUpdateWishlist);
+ }
 
-  Future<void> _onCreateWishlist(
-    CreateWishlist event,
-    Emitter<AddEditWishlistState> emit,
-  ) async {
-    emit(AddEditWishlistLoading());
-    
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      emit(AddEditWishlistError("Користувач не автентифікований"));
-      return;
-    }
+ Future<void> _onCreateWishlist(
+    // ⚠️ ПРИМІТКА: Щоб цей код працював, вам необхідно оновити 
+    // подію CreateWishlist у файлі 'add_edit_wishlist_event.dart'
+    // до таких параметрів: 
+    // const CreateWishlist({
+    //   required this.name, 
+    //   required this.iconCodePoint, 
+    //   required this.iconFontFamily, 
+    //   this.iconFontPackage
+    // });
+ CreateWishlist event,
+ Emitter<AddEditWishlistState> emit,
+ ) async {
+ emit(AddEditWishlistLoading());
+ 
+ final userId = FirebaseAuth.instance.currentUser?.uid;
+ if (userId == null) {
+ emit(AddEditWishlistError("Користувач не автентифікований"));
+ return;
+ }
 
-    try {
-      final newWishlist = Wishlist(
-        id: '', 
-        ownerId: userId,
-        name: event.name,
-        icon: event.icon,
-        createdAt: Timestamp.now(),
-        itemCount: 0, 
-      );
-      await _wishlistRepository.addWishlist(newWishlist);
-      emit(AddEditWishlistSuccess());
-    } catch (e) {
-      emit(AddEditWishlistError(e.toString()));
-    }
-  }
+ try {
+ final newWishlist = Wishlist(
+ id: '', 
+ ownerId: userId,
+ name: event.name,
+        // ✅ ВИПРАВЛЕННЯ: Замінюємо event.icon на нові параметри
+        iconCodePoint: event.iconCodePoint,
+        iconFontFamily: event.iconFontFamily,
+        iconFontPackage: event.iconFontPackage, // Це поле може бути null
+ createdAt: Timestamp.now(),
+ itemCount: 0, 
+ );
+ await _wishlistRepository.addWishlist(newWishlist);
+ emit(AddEditWishlistSuccess());
+ } catch (e) {
+ emit(AddEditWishlistError(e.toString()));
+ }
+ }
 
-  Future<void> _onUpdateWishlist(
-    UpdateWishlist event,
-    Emitter<AddEditWishlistState> emit,
-  ) async {
-    emit(AddEditWishlistLoading());
-    try {
-      await _wishlistRepository.updateWishlist(event.wishlist);
-      emit(AddEditWishlistSuccess());
-    } catch (e) {
-      emit(AddEditWishlistError(e.toString()));
-    }
-  }
+ Future<void> _onUpdateWishlist(
+ UpdateWishlist event,
+ Emitter<AddEditWishlistState> emit,
+ ) async {
+ emit(AddEditWishlistLoading());
+ try {
+ await _wishlistRepository.updateWishlist(event.wishlist);
+ emit(AddEditWishlistSuccess());
+ } catch (e) {
+ emit(AddEditWishlistError(e.toString()));
+ }
+ }
 }

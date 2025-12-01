@@ -6,7 +6,14 @@ class Wishlist extends Equatable {
   final String id;
   final String ownerId;
   final String name;
-  final IconData icon;
+
+  // ❌ ВИДАЛЕНО: final IconData icon;
+  
+  // ✅ ДОДАНО: Поля для зберігання компонентів IconData
+  final int iconCodePoint;
+  final String iconFontFamily;
+  final String? iconFontPackage; // null для MaterialIcons
+
   final int itemCount;
   final Timestamp createdAt;
 
@@ -14,28 +21,48 @@ class Wishlist extends Equatable {
     required this.id,
     required this.ownerId,
     required this.name,
-    required this.icon,
+    // ✅ Оновлений конструктор для прийому компонентів
+    required this.iconCodePoint,
+    required this.iconFontFamily,
+    this.iconFontPackage, 
     required this.itemCount,
     required this.createdAt,
   });
 
+  // ✅ Геттер для зручного отримання IconData
+  IconData get icon => IconData(
+        iconCodePoint,
+        fontFamily: iconFontFamily,
+        fontPackage: iconFontPackage,
+      );
+
   @override
-  List<Object?> get props => [id, ownerId, name, icon, itemCount, createdAt];
+  List<Object?> get props => [
+        id, 
+        ownerId, 
+        name, 
+        iconCodePoint, // ✅ Використовуємо прості типи
+        iconFontFamily,
+        iconFontPackage,
+        itemCount, 
+        createdAt
+      ];
 
   factory Wishlist.fromSnapshot(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final defaultIcon = Icons.card_giftcard;
     
-    // 💡 Виправлення: Додано iconFontPackage для повної коректності IconData.
+    // 💡 ТЕПЕР МИ ЗБЕРІГАЄМО ТІЛЬКИ ЧИСЛА ТА РЯДКИ
     return Wishlist(
       id: doc.id,
       ownerId: data['ownerId'] ?? '',
       name: data['name'] ?? '',
-      icon: IconData(
-        data['iconCodePoint'] ?? defaultIcon.codePoint,
-        fontFamily: data['iconFontFamily'] ?? defaultIcon.fontFamily,
-        fontPackage: data['iconFontPackage'] as String?, 
-      ),
+      
+      // ✅ Більше не створюємо IconData, Flutter задоволений!
+      iconCodePoint: data['iconCodePoint'] ?? defaultIcon.codePoint,
+      iconFontFamily: data['iconFontFamily'] ?? defaultIcon.fontFamily!,
+      iconFontPackage: data['iconFontPackage'] as String?,
+
       createdAt: data['createdAt'] ?? Timestamp.now(),
       itemCount: data['itemCount'] ?? 0,
     );
@@ -46,10 +73,11 @@ class Wishlist extends Equatable {
       'ownerId': ownerId,
       'name': name,
       'createdAt': createdAt,
-      'iconCodePoint': icon.codePoint,
-      'iconFontFamily': icon.fontFamily,
-      'iconFontPackage': icon.fontPackage, // 👈 Додано для збереження
-      'itemCount': itemCount,
+      // ✅ Зберігаємо окремі поля
+      'iconCodePoint': iconCodePoint,
+      'iconFontFamily': iconFontFamily,
+      'iconFontPackage': iconFontPackage,
+      'itemCount': itemCount, 
     };
   }
 }
